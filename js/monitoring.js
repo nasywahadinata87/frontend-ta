@@ -1,0 +1,240 @@
+// =====================================
+// LOGIN CHECK
+// =====================================
+
+if (sessionStorage.getItem("isLogin") !== "true") {
+    window.location.href = "login.html";
+}
+
+// =====================================
+// URL BACKEND
+// =====================================
+
+const API_URL = "http://localhost:3000";
+
+// =====================================
+// ELEMENT HTML
+// =====================================
+
+const el = {
+
+    voltage: document.getElementById("voltageValue"),
+    current: document.getElementById("currentValue"),
+    soc: document.getElementById("socValue"),
+    pf: document.getElementById("pfValue"),
+    mode: document.getElementById("modeValue"),
+    source: document.getElementById("sourceValue"),
+    badge: document.getElementById("sourceBadge"),
+    socBar: document.getElementById("socMiniFill")
+
+};
+
+// =====================================
+// UPDATE DASHBOARD
+// =====================================
+
+function updateDashboard(data) {
+
+    el.voltage.textContent = data.tegangan ?? "--";
+
+    el.current.textContent = data.arus ?? "--";
+
+    el.soc.textContent = data.soc ?? "--";
+
+    el.pf.textContent = data.pf ?? "--";
+
+    el.mode.textContent = data.mode_sistem ?? "--";
+
+    el.source.textContent = data.sumber_aktif ?? "--";
+
+    el.badge.textContent = data.sumber_aktif ?? "--";
+
+    if (data.sumber_aktif === "PLTS") {
+
+        el.badge.className = "source-badge plts";
+
+    } else {
+
+        el.badge.className = "source-badge pln";
+
+    }
+
+    // Progress Bar SoC
+    el.socBar.style.width = `${data.soc ?? 0}%`;
+
+}
+
+// =====================================
+// REALTIME
+// =====================================
+
+async function loadRealtime() {
+
+    try {
+
+        const response = await fetch(`${API_URL}/realtime`);
+
+        if (!response.ok) {
+            throw new Error("Gagal mengambil data realtime");
+        }
+
+        const data = await response.json();
+
+        updateDashboard(data);
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+
+}
+
+// =====================================
+// DATA LOGGER
+// =====================================
+
+async function loadLogs() {
+
+    try {
+
+        const response = await fetch(`${API_URL}/logs`);
+
+        if (!response.ok) {
+            throw new Error("Gagal mengambil data logger");
+        }
+
+        const logs = await response.json();
+
+
+        updateTable(logs);
+
+            // nanti
+            // updateChart(logs);
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+
+}
+
+// =====================================
+// PERTAMA KALI
+// =====================================
+
+loadRealtime();
+
+loadLogs();
+
+// =====================================
+// UPDATE TABLE
+// =====================================
+
+function updateTable(logs) {
+
+    const tbody = document.getElementById("logTbody");
+
+    tbody.innerHTML = "";
+
+    if (!logs.length) {
+
+        tbody.innerHTML = `
+            <tr class="empty-row">
+                <td colspan="7">Tidak ada data</td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    logs.forEach(log => {
+
+        const badge =
+            log.sumber_aktif === "PLTS"
+                ? `<span class="badge-plts">☀ PLTS</span>`
+                : `<span class="badge-pln">🏭 PLN</span>`;
+
+        tbody.innerHTML += `
+            <tr>
+
+                <td class="td-time">
+                    ${new Date(log.waktu).toLocaleString("id-ID")}
+                </td>
+
+                <td class="td-mode">
+                    ${log.mode_sistem}
+                </td>
+
+                <td>
+                    ${badge}
+                </td>
+
+                <td class="td-val" style="color:var(--accent-amber)">
+                    ${log.tegangan} <small>V</small>
+                </td>
+
+                <td class="td-val" style="color:var(--accent-sky)">
+                    ${log.arus} <small>A</small>
+                </td>
+
+                <td>
+                    <div class="soc-cell">
+
+                        <span>${log.soc}%</span>
+
+                        <div class="soc-bar">
+                            <div
+                                class="soc-bar-fill"
+                                style="width:${log.soc}%; background:#2f9e5a;">
+                            </div>
+                        </div>
+
+                    </div>
+                </td>
+
+                <td class="td-val" style="color:var(--accent-sun)">
+                    ${log.pf}
+                </td>
+
+            </tr>
+        `;
+
+    });
+
+    document.getElementById("rowCount").textContent =
+        `${logs.length} RECORDS`;
+
+}
+// =====================================
+// AUTO REFRESH
+// =====================================
+
+// Realtime Monitoring
+setInterval(loadRealtime, 1000);
+
+// Data Logger (5 menit)
+setInterval(loadLogs, 300000);
+
+// =====================================
+// LOGOUT
+// =====================================
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+
+    sessionStorage.removeItem("isLogin");
+
+    window.location.href = "index.html";
+
+});
+
+// =====================================
+// EXPORT CSV
+// =====================================
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+
+    window.open(`${API_URL}/export_csv`, "_blank");
+
+});

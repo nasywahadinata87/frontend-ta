@@ -1,0 +1,819 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Monitor — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Solar-gold + sky-blue, on a warm paper base — not the generic cream/serif combo */
+            --bg-base: #f3f6f2;
+            --bg-surface: #ffffff;
+            --bg-card: #ffffff;
+            --bg-hover: #f7faf5;
+            --border: #e2e8df;
+            --border-strong: #c9d4c4;
+            --text-primary: #14241c;
+            --text-secondary: #5b6b60;
+            --text-muted: #94a299;
+            --accent-sun: #d97a06;
+            --accent-sun-soft: #fef0dc;
+            --accent-sky: #0e7ab5;
+            --accent-sky-soft: #e2f1fa;
+            --accent-leaf: #2f9e5a;
+            --accent-leaf-soft: #e3f6e9;
+            --accent-amber: #c2860a;
+            --accent-red: #d44d3f;
+            --accent-red-soft: #fce8e5;
+            --shadow-sm: 0 1px 2px rgba(20,36,28,0.04), 0 1px 1px rgba(20,36,28,0.03);
+            --shadow-md: 0 4px 14px rgba(20,36,28,0.06), 0 1px 3px rgba(20,36,28,0.04);
+            --shadow-lg: 0 16px 36px rgba(20,36,28,0.10), 0 4px 10px rgba(20,36,28,0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sunray texture instead of cyberpunk grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 12% 8%, rgba(217,122,6,0.07) 0%, transparent 38%),
+                radial-gradient(circle at 88% 4%, rgba(14,122,181,0.06) 0%, transparent 42%),
+                linear-gradient(rgba(20,36,28,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(20,36,28,0.025) 1px, transparent 1px);
+            background-size: auto, auto, 44px 44px, 44px 44px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 30px 24px 60px;
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding-bottom: 22px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left { display: flex; align-items: center; gap: 14px; }
+
+        .logo-icon {
+            width: 46px; height: 46px;
+            background: linear-gradient(135deg, var(--accent-sun), #f0a83a);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 6px 16px rgba(217,122,6,0.32);
+        }
+
+        .header-title h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+        }
+
+        .header-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 12px; }
+
+        .live-badge {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--accent-leaf-soft);
+            border: 1px solid rgba(47,158,90,0.3);
+            color: var(--accent-leaf);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            cursor: default;
+            user-select: none;
+        }
+
+        .live-badge.paused {
+            background: var(--accent-sun-soft);
+            border-color: rgba(217,122,6,0.3);
+            color: var(--accent-amber);
+        }
+
+        .live-dot {
+            width: 7px; height: 7px;
+            background: var(--accent-leaf);
+            border-radius: 50%;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .live-badge.paused .live-dot {
+            background: var(--accent-amber);
+            animation: none;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.7); }
+        }
+
+        .btn-export {
+            display: flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, var(--accent-leaf), #3cb86b);
+            color: white;
+            padding: 9px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(47,158,90,0.28);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(47,158,90,0.4);
+        }
+
+        /* ── Refresh / control bar ── */
+        .refresh-bar {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 26px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'Space Mono', monospace;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .refresh-bar .progress-track {
+            flex: 1;
+            height: 5px;
+            background: var(--bg-base);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .refresh-bar .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-sky), #38b6e0);
+            border-radius: 3px;
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        .btn-toggle {
+            background: var(--bg-base);
+            border: 1px solid var(--border-strong);
+            color: var(--text-secondary);
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-toggle:hover {
+            border-color: var(--accent-sky);
+            color: var(--accent-sky);
+            background: var(--accent-sky-soft);
+        }
+
+        .btn-logout {
+            display: flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, var(--accent-red), #e66255);
+            color: white;
+            padding: 9px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(212,77,63,0.28);
+            border: none;
+            cursor: pointer;
+        }
+        .btn-logout:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(212,77,63,0.4);
+        }
+
+        /* ── Stat Cards ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 14px 14px 0 0;
+        }
+
+        .stat-card.sun::before { background: linear-gradient(90deg, var(--accent-sun), transparent); }
+        .stat-card.leaf::before { background: linear-gradient(90deg, var(--accent-leaf), transparent); }
+        .stat-card.amber::before { background: linear-gradient(90deg, var(--accent-amber), transparent); }
+        .stat-card.sky::before { background: linear-gradient(90deg, var(--accent-sky), transparent); }
+
+        .stat-card:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-value.sun { color: var(--accent-sun); }
+        .stat-value.leaf { color: var(--accent-leaf); }
+        .stat-value.amber { color: var(--accent-amber); }
+        .stat-value.sky { color: var(--accent-sky); }
+
+        .stat-unit {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+            font-weight: 400;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .soc-mini-bar {
+            height: 6px;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .soc-mini-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #d44d3f, #d97a06, #2f9e5a);
+            transition: width 0.6s ease;
+        }
+
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .source-badge.plts {
+            background: var(--accent-leaf-soft);
+            border: 1px solid rgba(47,158,90,0.3);
+            color: var(--accent-leaf);
+        }
+
+        .source-badge.pln {
+            background: var(--accent-red-soft);
+            border: 1px solid rgba(212,77,63,0.3);
+            color: var(--accent-red);
+        }
+
+        /* ── Charts ── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 26px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+        }
+
+        .chart-badge {
+            font-size: 11px;
+            font-family: 'Space Mono', monospace;
+            color: var(--text-secondary);
+            background: var(--bg-base);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        /* ── Table ── */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .table-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-select {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: var(--bg-base);
+            border: 1px solid var(--border-strong);
+            border-radius: 7px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .table-count {
+            font-size: 11px;
+            font-family: 'Space Mono', monospace;
+            color: var(--accent-sky);
+            background: var(--accent-sky-soft);
+            border: 1px solid rgba(14,122,181,0.25);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .table-wrap { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background: var(--bg-base);
+            padding: 12px 16px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--border);
+            user-select: none;
+        }
+
+        th.sortable { cursor: pointer; }
+        th.sortable:hover { color: var(--accent-sky); }
+        .sort-arrow { font-size: 9px; margin-left: 4px; opacity: 0.5; }
+        th.sortable.active .sort-arrow { opacity: 1; color: var(--accent-sky); }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        tbody tr:last-child { border-bottom: none; }
+
+        tbody tr:hover { background: var(--bg-hover); }
+
+        tbody td {
+            padding: 13px 16px;
+            font-size: 13px;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .td-time {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .td-mode {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-sky);
+        }
+
+        .td-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+        }
+
+        .badge-plts, .badge-pln {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 5px;
+            font-size: 11px; font-weight: 700;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .badge-plts {
+            background: var(--accent-leaf-soft);
+            border: 1px solid rgba(47,158,90,0.25);
+            color: var(--accent-leaf);
+        }
+
+        .badge-pln {
+            background: var(--accent-red-soft);
+            border: 1px solid rgba(212,77,63,0.25);
+            color: var(--accent-red);
+        }
+
+        .soc-cell { display: flex; align-items: center; gap: 10px; }
+
+        .soc-bar {
+            width: 60px; height: 6px;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .soc-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .empty-row td {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 30px 16px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 14px; align-items: flex-start; }
+        }
+
+        @media (max-width: 500px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .header-right { flex-wrap: wrap; }
+            .table-header { flex-direction: column; align-items: flex-start; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .live-dot { animation: none; }
+            .fade-in { animation: none; opacity: 1; transform: none; }
+        }
+
+        /* Fade in animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(14px);
+            animation: fadeUp 0.45s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in:nth-child(1) { animation-delay: 0.04s; }
+        .fade-in:nth-child(2) { animation-delay: 0.08s; }
+        .fade-in:nth-child(3) { animation-delay: 0.12s; }
+        .fade-in:nth-child(4) { animation-delay: 0.16s; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- Header -->
+    <header>
+        <div class="header-left">
+            <div class="logo-icon" style="background: none; box-shadow: none; border-radius: 0;">
+        <img src="assets/logo TO.jpeg" alt="Logo ATS"
+     style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
+            </div>
+            <div class="header-title">
+                <h1>Automatic Transfer Switch Monitoring and Data Logging</h1>
+                <p>Teknik Otomasi PPNS</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="live-badge" id="liveBadge">
+                <span class="live-dot"></span>
+                <span id="liveText">LIVE</span>
+            </div>
+            <button id="exportBtn" class="btn-export" type="button">
+                <span>↓</span> Export CSV
+            </button>
+            <button id="logoutBtn" class="btn-logout" type="button">
+                <span>🚪</span> Logout
+            </button>
+            </a>
+        </div>
+    </header>
+
+    <!-- Refresh / control bar -->
+    <div class="refresh-bar">
+        <span>⏱ Auto-refresh</span>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span id="countdown-text">60s</span>
+        <button class="btn-toggle" id="pauseBtn" type="button">⏸ Pause</button>
+    </div>
+
+    <!-- Stat Cards -->
+<div class="stats-grid">
+    
+    <!-- Tegangan -->
+    <div class="stat-card sun fade-in">
+        <span class="stat-icon">⚡</span>
+
+        <div class="stat-label">
+            Tegangan
+        </div>
+
+        <div class="stat-value sun">
+            <span id="voltageValue">--</span>
+            <span class="stat-unit">V</span>
+        </div>
+
+        <div class="stat-sub">
+            Power Factor :
+            <span id="pfValue">--</span>
+        </div>
+    </div>
+
+    <!-- SoC -->
+    <div class="stat-card leaf fade-in">
+        <span class="stat-icon">🔋</span>
+
+        <div class="stat-label">
+            SoC Baterai
+        </div>
+
+        <div class="stat-value leaf">
+            <span id="socValue">--</span>
+            <span class="stat-unit">%</span>
+        </div>
+
+        <div class="soc-mini-bar">
+            <div
+                id="socMiniFill"
+                class="soc-mini-fill"
+                style="width:0%;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Arus -->
+    <div class="stat-card amber fade-in">
+        <span class="stat-icon">〰️</span>
+
+        <div class="stat-label">
+            Arus
+        </div>
+
+        <div class="stat-value amber">
+            <span id="currentValue">--</span>
+            <span class="stat-unit">A</span>
+        </div>
+
+        <div class="stat-sub">
+            Mode :
+            <span id="modeValue">--</span>
+        </div>
+    </div>
+
+    <!-- Sumber Aktif -->
+    <div class="stat-card sky fade-in">
+        <span class="stat-icon">🔌</span>
+
+        <div class="stat-label">
+            Sumber Aktif
+        </div>
+
+        <div
+            id="sourceValue"
+            class="stat-value sky"
+            style="font-size:22px; margin-top:4px;">
+            --
+        </div>
+
+        <div>
+            <span
+                id="sourceBadge"
+                class="source-badge">
+                --
+            </span>
+        </div>
+    </div>
+
+</div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <span class="chart-dot" style="background:var(--accent-sun)"></span>
+                    Tegangan (Volt)
+                </div>
+                <span class="chart-badge">20 TITIK TERAKHIR</span>
+            </div>
+            <canvas id="chartVolt" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <span class="chart-dot" style="background:var(--accent-leaf)"></span>
+                    SoC Baterai (%)
+                </div>
+                <span class="chart-badge">20 TITIK TERAKHIR</span>
+            </div>
+            <canvas id="chartSoC" height="140"></canvas>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+        <div class="table-header">
+            <div class="table-title">
+                📋 Riwayat Log Sensor
+            </div>
+            <div class="table-controls">
+                <select class="filter-select" id="sourceFilter">
+                    <option value="all">Semua Sumber</option>
+                    <option value="PLTS">☀ PLTS saja</option>
+                    <option value="PLN">🏭 PLN saja</option>
+                </select>
+                <span class="table-count" id="rowCount">-- RECORDS</span>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-key="waktu" data-type="string">Waktu <span class="sort-arrow">▼</span></th>
+                        <th>Mode Sistem</th>
+                        <th class="sortable" data-key="sumber_aktif" data-type="string">Sumber <span class="sort-arrow">▼</span></th>
+                        <th class="sortable" data-key="tegangan" data-type="number">Tegangan <span class="sort-arrow">▼</span></th>
+                        <th class="sortable" data-key="arus" data-type="number">Arus <span class="sort-arrow">▼</span></th>
+                        <th class="sortable" data-key="soc" data-type="number">SoC <span class="sort-arrow">▼</span></th>
+                        <th class="sortable" data-key="pf" data-type="number">Power Factor <span class="sort-arrow">▼</span></th>
+                    </tr>
+                </thead>
+                <tbody id="logTbody">
+                    
+                    <tr data-sumber="--"
+                        data-waktu="--"
+                        data-tegangan="--"
+                        data-arus="--"
+                        data-soc="--"
+                        data-pf="--">
+                        <td class="td-time">--</td>
+                        <td class="td-mode">--</td>
+                        <td>
+                            
+                                <span class="badge-plts">☀ PLTS</span>
+                            
+                                <span class="badge-pln">🏭 PLN</span>
+                            
+                        </td>
+                        <td class="td-val" style="color:var(--accent-amber)">-- <small style="color:var(--text-secondary)">V</small></td>
+                        <td class="td-val" style="color:var(--accent-sky)">-- <small style="color:var(--text-secondary)">A</small></td>
+                        <td>
+                            <div class="soc-cell">
+                                <span class="td-val" style="color:--">--%</span>
+                                <div class="soc-bar">
+                                   <div class="soc-bar-fill"
+     style="width:0%; background:#2f9e5a;">
+</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="td-val" style="color:var(--accent-sun)">--</td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /.wrapper -->
+
+
+<!-- JavaScript Monitoring -->
+<script src="js/monitoring.js"></script>
+
+</body>
+</html>
