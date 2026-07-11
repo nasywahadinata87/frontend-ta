@@ -7,12 +7,6 @@ if (sessionStorage.getItem("isLogin") !== "true") {
 }
 
 // =====================================
-// URL BACKEND
-// =====================================
-
-const API_URL = "http://localhost:3000";
-
-// =====================================
 // ELEMENT HTML
 // =====================================
 
@@ -43,21 +37,21 @@ function updateDashboard(data) {
 
     el.pf.textContent = data.pf ?? "--";
 
-    el.mode.textContent = data.mode_sistem ?? "--";
+    el.mode.textContent = data.mode ?? "--";
 
-    el.source.textContent = data.sumber_aktif ?? "--";
+el.source.textContent = data.sumber ?? "--";
 
-    el.badge.textContent = data.sumber_aktif ?? "--";
+el.badge.textContent = data.sumber ?? "--";
 
-    if (data.sumber_aktif === "PLTS") {
+if (data.sumber === "PLTS") {
 
-        el.badge.className = "source-badge plts";
+    el.badge.className = "source-badge plts";
 
-    } else {
+} else {
 
-        el.badge.className = "source-badge pln";
+    el.badge.className = "source-badge pln";
 
-    }
+}
 
     // Progress Bar SoC
     el.socBar.style.width = `${data.soc ?? 0}%`;
