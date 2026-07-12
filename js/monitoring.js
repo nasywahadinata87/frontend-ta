@@ -24,6 +24,12 @@ const el = {
 };
 
 // =====================================
+// DATA LOGGER GLOBAL
+// =====================================
+
+let allLogs = [];
+
+// =====================================
 // CHART
 // =====================================
 
@@ -54,9 +60,15 @@ if (data.sumber === "PLTS") {
 
     el.badge.className = "source-badge plts";
 
-} else {
+}
+else if (data.sumber === "PLN") {
 
     el.badge.className = "source-badge pln";
+
+}
+else{
+
+    el.badge.className = "source-badge mati";
 
 }
 
@@ -105,11 +117,9 @@ async function loadLogs() {
             throw new Error("Gagal mengambil data logger");
         }
 
-        const logs = await response.json();
+        allLogs = await response.json();
 
-
-        updateTable(logs);
-        updateChart(logs);
+        applyFilter();
         remaining = REFRESH_TIME;
 
     } catch (err) {
@@ -127,6 +137,41 @@ async function loadLogs() {
 loadRealtime();
 
 loadLogs();
+
+// =====================================
+// FILTER SUMBER
+// =====================================
+
+function applyFilter() {
+
+    const filter =
+        document.getElementById("filterSource").value;
+
+    let filteredLogs = allLogs;
+
+    if (filter === "PLTS") {
+
+        filteredLogs =
+            allLogs.filter(log =>
+                log.sumber_aktif === "PLTS"
+            );
+
+    }
+
+    else if (filter === "PLN") {
+
+        filteredLogs =
+            allLogs.filter(log =>
+                log.sumber_aktif === "PLN"
+            );
+
+    }
+
+    updateTable(filteredLogs);
+
+    updateChart(filteredLogs);
+
+}
 
 // =====================================
 // UPDATE TABLE
@@ -151,11 +196,16 @@ function updateTable(logs) {
 
     logs.forEach(log => {
 
-        const badge =
-            log.sumber_aktif === "PLTS"
-                ? `<span class="badge-plts">☀ PLTS</span>`
-                : `<span class="badge-pln">🏭 PLN</span>`;
-
+        let badge = "";
+            if(log.sumber_aktif==="PLTS"){
+                badge=`<span class="badge-plts">☀ PLTS</span>`;
+            }
+            else if(log.sumber_aktif==="PLN"){
+                badge=`<span class="badge-pln">🏭 PLN</span>`;
+            }
+            else{
+                badge=`<span class="badge-mati">⚫ MATI</span>`;
+            }
         tbody.innerHTML += `
             <tr>
 
@@ -347,20 +397,30 @@ function updateChart(logs) {
 const REFRESH_TIME = 300; // 5 menit
 let remaining = REFRESH_TIME;
 let pauseRefresh = false;
-const timerEl = document.getElementById("refreshTimer");
-const progressEl = document.getElementById("refreshProgress");
+const timerEl =
+    document.getElementById("refreshTimer");
+const progressEl =
+    document.getElementById("refreshProgress");
+const pauseBtn =
+    document.getElementById("pauseRefresh");
+
 function updateRefreshTimer() {
     if (pauseRefresh) return;
     remaining--;
     if (remaining <= 0) {
         loadLogs();
-        remaining = REFRESH_TIME;
+        return;
     }
     const minute = String(Math.floor(remaining / 60)).padStart(2, "0");
     const second = String(remaining % 60).padStart(2, "0");
-    timerEl.textContent = `${minute}:${second}`;
+    if (timerEl) {
+    timerEl.textContent =
+        `${minute}:${second}`;
+    }
+    if (progressEl) {
     progressEl.style.width =
         `${(remaining / REFRESH_TIME) * 100}%`;
+    }
 
 }
 
@@ -372,16 +432,20 @@ setInterval(() => {
 
 }, 1000);
 
-document.getElementById("pauseRefresh")
-.addEventListener("click", () => {
+document
+.getElementById("filterSource")
+.addEventListener("change", applyFilter);
+
+pauseBtn.addEventListener("click", () => {
 
     pauseRefresh = !pauseRefresh;
 
-    document.getElementById("pauseRefresh").textContent =
-        pauseRefresh ? "▶ Resume" : "⏸ Pause";
+    pauseBtn.textContent =
+        pauseRefresh
+            ? "▶ Resume"
+            : "⏸ Pause";
 
-}
-);
+});
 
 // =====================================
 // LOGOUT
