@@ -361,12 +361,12 @@
             margin-bottom: 26px;
         }
 
-        .chart-card {
+        .chart-card{
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 22px;
-            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            height: 320px;
         }
 
         .chart-header {
@@ -398,6 +398,11 @@
             padding: 4px 10px;
             border-radius: 6px;
             border: 1px solid var(--border);
+        }
+        .chart-container{
+            position: relative;
+            width:100%;
+            height:220px;
         }
 
         /* ── Table ── */
@@ -729,8 +734,8 @@
                     Tegangan (Volt)
                 </div>
                 <span class="chart-badge">20 TITIK TERAKHIR</span>
-            </div>
-            <canvas id="chartVolt" height="140"></canvas>
+            </div> class="chart-container">
+                  <canvas id="chartVolt"></canvas>
         </div>
         <div class="chart-card">
             <div class="chart-header">
@@ -739,8 +744,8 @@
                     SoC Baterai (%)
                 </div>
                 <span class="chart-badge">20 TITIK TERAKHIR</span>
-            </div>
-            <canvas id="chartSoC" height="140"></canvas>
+            </div> class="chart-container">
+                  <canvas id="chartSoC"></canvas>
         </div>
     </div>
 

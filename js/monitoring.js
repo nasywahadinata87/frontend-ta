@@ -242,20 +242,44 @@ function updateChart(logs) {
             type: "line",
             data: {
                 labels: labels,
-                datasets: [{
-                    label: "Tegangan (Volt)",
-                    data: voltageData,
-                    borderColor: "#d97706",
-                    backgroundColor: "rgba(217,119,6,0.15)",
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 3
+                datasets:[{
+                data: voltageData,
+                borderColor:"#d97706",
+                backgroundColor:"rgba(217,119,6,0.08)",
+                fill:true,
+                tension:0.45,
+                borderWidth:3,
+                pointRadius:4
+
                 }]
             },
-            options: {
+           options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 4,
+                        hoverRadius: 6
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 5
+                        }
+                    }
+                }
             }
         }
     );
@@ -274,30 +298,47 @@ function updateChart(logs) {
             type: "line",
             data: {
                 labels: labels,
-                datasets: [{
-                    label: "SoC (%)",
-                    data: socData,
-                    borderColor: "#16a34a",
-                    backgroundColor: "rgba(22,163,74,0.15)",
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 3
+                datasets:[{
+                    data:socData,
+                    borderColor:"#16a34a",
+                    backgroundColor:"rgba(22,163,74,0.08)",
+                    fill:true,
+                    tension:0.45,
+                    borderWidth:3,
+                    pointRadius:4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                elements: {
+                    point: {
+                        radius:4,
+                        hoverRadius:6
+                    }
+                },
                 scales: {
-                    y: {
-                        min: 0,
-                        max: 100
+                    x: {
+                        grid:{
+                            display:false
+                        }
+                    },
+                    y:{
+                        min:0,
+                        max:100,
+                        ticks:{
+                            stepSize:20
+                        }
                     }
                 }
             }
         }
     );
-
 }
 
 // =====================================
