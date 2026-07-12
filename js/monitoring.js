@@ -24,6 +24,13 @@ const el = {
 };
 
 // =====================================
+// CHART
+// =====================================
+
+let voltageChart = null;
+let socChart = null;
+
+// =====================================
 // UPDATE DASHBOARD
 // =====================================
 
@@ -102,9 +109,7 @@ async function loadLogs() {
 
 
         updateTable(logs);
-
-            // nanti
-            // updateChart(logs);
+        updateChart(logs);
 
     } catch (err) {
 
@@ -201,6 +206,98 @@ function updateTable(logs) {
         `${logs.length} RECORDS`;
 
 }
+// =====================================
+// UPDATE CHART
+// =====================================
+function updateChart(logs) {
+
+    if (!logs.length) return;
+
+    // Dibalik agar data lama di kiri, data baru di kanan
+    const data = [...logs].reverse();
+
+    const labels = data.map(log =>
+        new Date(log.waktu).toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit"
+        })
+    );
+
+    const voltageData = data.map(log => Number(log.tegangan));
+    const socData = data.map(log => Number(log.soc));
+
+    // ===============================
+    // CHART TEGANGAN
+    // ===============================
+
+    if (voltageChart) {
+        voltageChart.destroy();
+    }
+
+    voltageChart = new Chart(
+        document.getElementById("chartVolt"),
+        {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Tegangan (Volt)",
+                    data: voltageData,
+                    borderColor: "#d97706",
+                    backgroundColor: "rgba(217,119,6,0.15)",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        }
+    );
+
+    // ===============================
+    // CHART SOC
+    // ===============================
+
+    if (socChart) {
+        socChart.destroy();
+    }
+
+    socChart = new Chart(
+        document.getElementById("chartSoC"),
+        {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "SoC (%)",
+                    data: socData,
+                    borderColor: "#16a34a",
+                    backgroundColor: "rgba(22,163,74,0.15)",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100
+                    }
+                }
+            }
+        }
+    );
+
+}
+
 // =====================================
 // AUTO REFRESH
 // =====================================
