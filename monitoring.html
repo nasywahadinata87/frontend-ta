@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATS Monitor — Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             /* Solar-gold + sky-blue, on a warm paper base — not the generic cream/serif combo */
@@ -191,7 +190,24 @@
             background:#1d8ed8;
             transition:width 1s linear;
         }
+        
+        .refresh-left{
+        display:flex;
+        align-items:center;
+        gap:8px;
+         white-space:nowrap;
+        }
 
+        .refresh-center{
+            flex:1;
+        }
+
+        .refresh-right{
+            display:flex;
+            align-items:center;
+            gap:15px;
+            white-space:nowrap;
+}
         .btn-toggle {
             background: var(--bg-base);
             border: 1px solid var(--border-strong);
@@ -625,7 +641,7 @@
     </header>
 
     <!-- Refresh / control bar -->
-    <div class="refresh-wrapper">
+    <div class="refresh-bar">
         <div class="refresh-left">
             <span class="refresh-icon">⏱</span>
             <span class="refresh-text">
@@ -644,7 +660,9 @@
             <span id="refreshTimer">
                 05:00
             </span>
-            <button id="pauseRefresh">
+            <button
+              id="pauseRefresh"
+              class="btn-toggle">
                 ⏸ Pause
             </button>
         </div>
@@ -741,26 +759,51 @@
 
     <!-- Charts -->
     <div class="charts-grid">
+
+        <!-- Chart Tegangan -->
         <div class="chart-card">
+
             <div class="chart-header">
+
                 <div class="chart-title">
                     <span class="chart-dot" style="background:var(--accent-sun)"></span>
                     Tegangan (Volt)
                 </div>
-                <span class="chart-badge">5 TITIK TERAKHIR</span>
-            </div class="chart-container">
-                  <canvas id="chartVolt"></canvas>
+
+                <span class="chart-badge">
+                    5 TITIK TERAKHIR
+                </span>
+
+            </div>
+
+            <div class="chart-container">
+                <canvas id="chartVolt"></canvas>
+            </div>
+
         </div>
+
+        <!-- Chart SoC -->
         <div class="chart-card">
+
             <div class="chart-header">
+
                 <div class="chart-title">
                     <span class="chart-dot" style="background:var(--accent-leaf)"></span>
                     SoC Baterai (%)
                 </div>
-                <span class="chart-badge">5 TITIK TERAKHIR</span>
-            </div class="chart-container">
-                  <canvas id="chartSoC"></canvas>
+
+                <span class="chart-badge">
+                    5 TITIK TERAKHIR
+                </span>
+
+            </div>
+
+            <div class="chart-container">
+                <canvas id="chartSoC"></canvas>
+            </div>
+
         </div>
+
     </div>
 
     <!-- Table -->
