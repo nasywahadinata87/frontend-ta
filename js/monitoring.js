@@ -110,6 +110,7 @@ async function loadLogs() {
 
         updateTable(logs);
         updateChart(logs);
+        remaining = REFRESH_TIME;
 
     } catch (err) {
 
@@ -340,16 +341,47 @@ function updateChart(logs) {
         }
     );
 }
-
 // =====================================
-// AUTO REFRESH
+// AUTO REFRESH TIMER
 // =====================================
+const REFRESH_TIME = 300; // 5 menit
+let remaining = REFRESH_TIME;
+let pauseRefresh = false;
+const timerEl = document.getElementById("refreshTimer");
+const progressEl = document.getElementById("refreshProgress");
+function updateRefreshTimer() {
+    if (pauseRefresh) return;
+    remaining--;
+    if (remaining <= 0) {
+        loadLogs();
+        remaining = REFRESH_TIME;
+    }
+    const minute = String(Math.floor(remaining / 60)).padStart(2, "0");
+    const second = String(remaining % 60).padStart(2, "0");
+    timerEl.textContent = `${minute}:${second}`;
+    progressEl.style.width =
+        `${(remaining / REFRESH_TIME) * 100}%`;
 
-// Realtime Monitoring
-setInterval(loadRealtime, 1000);
+}
 
-// Data Logger (5 menit)
-setInterval(loadLogs, 300000);
+setInterval(() => {
+
+    loadRealtime();
+
+    updateRefreshTimer();
+
+}, 1000);
+
+document.getElementById("pauseRefresh")
+.addEventListener("click", () => {
+
+    pauseRefresh = !pauseRefresh;
+
+    document.getElementById("pauseRefresh").textContent =
+        pauseRefresh ? "▶ Resume" : "⏸ Pause";
+
+}
+);
 
 // =====================================
 // LOGOUT
