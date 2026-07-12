@@ -213,8 +213,10 @@ function updateChart(logs) {
 
     if (!logs.length) return;
 
-    // Dibalik agar data lama di kiri, data baru di kanan
-    const data = [...logs].reverse();
+    // data
+    const data = [...logs]
+    .slice(0, 5)   // ambil 5 data terbaru
+    .reverse();    // tampilkan dari lama → baru
 
     const labels = data.map(log =>
         new Date(log.waktu).toLocaleTimeString("id-ID", {
